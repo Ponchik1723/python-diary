@@ -1,48 +1,57 @@
 import json
 from datetime import datetime
 
-DIARY_FILE = "diary.json"
+class Note:
+    def __init__(self, title: str, content: str):
+        self.date = datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.title = title
+        self.content = content
+    
+    def to_dict(self) -> dict:
+        return {
+            "date": self.date,
+            "title": self.title,
+            "content": self.content
+        }
+    
+    def __str__(self) -> str:
+        return f"[{self.date}] {self.title}\n{self.content}"
 
-def load_diary():
-    try:
-        with open(DIARY_FILE, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-def save_diary(entries):
-    with open(DIARY_FILE, "w", encoding="utf-8") as file:
-        json.dump(entries, file, ensure_ascii=False, indent=4)
-
-def add_entry():
-    title = input("Введите заголовок: ")
-    content = input("Введите текст записи: ")
+class Diary:
+    def __init__(self, filename: str = "diary.json"):
+        self.filename = filename
+        self.entries = self.load_entries()
     
-    entry = {
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "title": title,
-        "content": content
-    }
+    def load_entries(self) -> list:
+        try:
+            with open(self.filename, "r", encoding="utf-8") as file:
+                data = json.load(file)
+                return [Note(title=item["title"], content=item["content"]) for item in data]
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
     
-    entries = load_diary()
-    entries.append(entry)
-    save_diary(entries)
+    def save_entries(self):
+        with open(self.filename, "w", encoding="utf-8") as file:
+            json.dump([entry.to_dict() for entry in self.entries], file, ensure_ascii=False, indent=4)
     
-    print("\nЗапись добавлена!")
-
-def view_entries():
-    entries = load_diary()
+    def add_entry(self, title: str, content: str):
+        new_note = Note(title, content)
+        self.entries.append(new_note)
+        self.save_entries()
+        print("\nЗапись добавлена!")
     
-    if not entries:
-        print("\nЗаписей пока нет.")
-        return
-    
-    print("\nВаши записи:")
-    for i, entry in enumerate(entries, 1):
-        print(f"\n{i}. [{entry['date']}] {entry['title']}")
-        print(f"   {entry['content']}")
+    def view_entries(self):
+        if not self.entries:
+            print("\nЗаписей пока нет.")
+            return
+        
+        print("\nВаши записи:")
+        for i, entry in enumerate(self.entries, 1):
+            print(f"\n{i}. {entry}")
 
 def main():
+    my_diary = Diary()
+    
     while True:
         print("\n=== Дневник ===")
         print("1. Добавить запись")
@@ -52,12 +61,17 @@ def main():
         choice = input("Выберите действие: ")
         
         if choice == "1":
-            add_entry()
+            title = input("Введите заголовок: ")
+            content = input("Введите текст записи: ")
+            my_diary.add_entry(title, content)
+        
         elif choice == "2":
-            view_entries()
+            my_diary.view_entries()
+        
         elif choice == "3":
             print("До свидания!")
             break
+        
         else:
             print("Неверный выбор!")
 
